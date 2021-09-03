@@ -6,16 +6,16 @@ from utils.evaluate import mean_average_precision, pr_curve
 
 
 def train(
-    train_data,
-    query_data,
-    query_targets,
-    retrieval_data,
-    retrieval_targets,
-    code_length,
-    max_iter,
-    device,
-    topk,
-    ):
+        train_data,
+        query_data,
+        query_targets,
+        retrieval_data,
+        retrieval_targets,
+        code_length,
+        max_iter,
+        device,
+        topk,
+):
     """
     Training model.
 
@@ -34,7 +34,8 @@ def train(
         checkpoint(dict): Checkpoint.
     """
     # Initialization
-    query_data, query_targets, retrieval_data, retrieval_targets = query_data.to(device), query_targets.to(device), retrieval_data.to(device), retrieval_targets.to(device)
+    query_data, query_targets, retrieval_data, retrieval_targets = query_data.to(device), query_targets.to(
+        device), retrieval_data.to(device), retrieval_targets.to(device)
     R = torch.randn(code_length, code_length).to(device)
     [U, _, _] = torch.svd(R)
     R = U[:, :code_length]
@@ -104,4 +105,3 @@ def generate_code(data, code_length, R, pca):
         pca_data(torch.Tensor): PCA data.
     """
     return (torch.from_numpy(pca.transform(data.numpy())).to(R.device) @ R).sign()
-

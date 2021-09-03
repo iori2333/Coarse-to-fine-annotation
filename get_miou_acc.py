@@ -52,7 +52,7 @@ if __name__ == '__main__':
     h, w = 1773, 1379
     for j in gt_list:
         gt.append(cv2.resize(cv2.imread(j + '/label_gray.png', cv2.IMREAD_GRAYSCALE).transpose(1, 0)[:, ::-1],
-                             (int(w/2), int(h/2)),
+                             (int(w / 2), int(h / 2)),
                              interpolation=cv2.INTER_NEAREST)
                   )
 
@@ -74,6 +74,3 @@ if __name__ == '__main__':
     print(mean_IoU)
     print(f'acc: {acc_array}')
     print(mean_acc)
-
-
-

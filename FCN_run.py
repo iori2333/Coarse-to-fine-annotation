@@ -1,4 +1,5 @@
 # -*- coding : utf-8-*-
+import os
 
 import torch
 from torch.nn import functional as F
@@ -113,58 +114,26 @@ def main():
     model.cuda()
 
     # data
-    # root = 'F:/database/cityscapes/'
-    # imglist = ['leftImg8bit/train/aachen/aachen_000000_000019_leftImg8bit.png']
-    # labellist = ['gtCoarse/train/aachen/aachen_000000_000019_gtCoarse_labelIds.png']
-
-    imglist = ['leftImg8bit/train/aachen/aachen_000045_000019_leftImg8bit.png']
-    labellist = ['gtCoarse/train/aachen/aachen_000045_000019_gtCoarse_labelIds.png']
-
-    root = 'F:/database/HSIcityscapes/'
-
-    hsilist = ['testing_dataset/rgb20190528_180056_110313_josn/20190528_180056_110313.hsd',
-               'testing_dataset/rgb20190528_180226_64001_josn/20190528_180226_64001.hsd',
-               'testing_dataset/rgb20190528_180241_58359_json/20190528_180241_58359.hsd',
-               'testing_dataset/rgb20190528_180535_7407_json/20190528_180535_7407.hsd',
-               'testing_dataset/rgb20190528_180641_79313_json/20190528_180641_79313.hsd',
-               'testing_dataset/rgb20190528_180919_20370_json/20190528_180919_20370.hsd',
-               ]
-
-    imglist = ['testing_dataset/rgb20190528_180056_110313_josn/rgb20190528_180056_110313_cropped.png',
-               'testing_dataset/rgb20190528_180226_64001_josn/rgb20190528_180226_64001_cropped.png',
-               'testing_dataset/rgb20190528_180241_58359_json/rgb20190528_180241_58359_cropped.png',
-               'testing_dataset/rgb20190528_180535_7407_json/rgb20190528_180535_7407_cropped.png',
-               'testing_dataset/rgb20190528_180641_79313_json/rgb20190528_180641_79313_cropped.png',
-               'testing_dataset/rgb20190528_180919_20370_json/rgb20190528_180919_20370_cropped.png',
-               ]
-    labellist = ['testing_dataset/rgb20190528_180056_110313_josn/2.png',
-                 'testing_dataset/rgb20190528_180226_64001_josn/2.png',
-                 'testing_dataset/rgb20190528_180241_58359_json/2.png',
-                 'testing_dataset/rgb20190528_180535_7407_json/2.png',
-                 'testing_dataset/rgb20190528_180641_79313_json/2.png',
-                 'testing_dataset/rgb20190528_180919_20370_json/2.png',
-                 ]
-    finelabellist = ['testing_dataset/rgb20190528_180056_110313_josn/label_gray.png',
-                     'testing_dataset/rgb20190528_180226_64001_josn/label_gray.png',
-                     'testing_dataset/rgb20190528_180241_58359_json/label_gray.png',
-                     'testing_dataset/rgb20190528_180535_7407_json/label_gray.png',
-                     'testing_dataset/rgb20190528_180641_79313_json/label_gray.png',
-                     'testing_dataset/rgb20190528_180919_20370_json/label_gray.png',
-                     ]
+    root = '/data/HSICityV2/train'
+    names = [f[:-4] for f in os.listdir(root) if f.endswith('.hsd')]
+    hsi_list = list(map(lambda item: item + '.hsd', names))
+    img_list = list(map(lambda item: 'rgb' + item + '.jpg', names))
+    label_list = list(map(lambda item: 'rgb' + item + '_gray.png', names))
+    fine_label_list = list(map(lambda item: 'rgb' + item + '_gray.png', names))
 
     dataset = datasets.dataset(
         root=root,
-        hsilist=hsilist,
-        imagelist=imglist,
-        labellist=labellist,
-        groundtruth=finelabellist
+        hsilist=hsi_list,
+        imagelist=img_list,
+        labellist=label_list,
+        groundtruth=fine_label_list
     )
 
-    dataloader = torch.utils.data.DataLoader(
+    data_loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=1,
         shuffle=False,
-        num_workers=0
+        num_workers=2,
     )
 
     class LayerActivations:
@@ -185,13 +154,12 @@ def main():
     pca3 = PCA(n_components=3)
     confusion_matrix = np.zeros((3, 10, 10))
 
-    for k, (inputhsi, inputimage, inputlabel, gt) in enumerate(dataloader):
+    for k, (input_hsi, input_image, input_label, ground_truth) in enumerate(data_loader):
+        h, w = input_image.shape[2], input_image.shape[3]
 
-        h, w = inputimage.shape[2], inputimage.shape[3]
-
-        inputimage = inputimage.cuda()
+        input_image = input_image.cuda()
         with torch.no_grad():
-            output = model.forward(inputimage)
+            output = model.forward(input_image)
 
         conv2_2_out = F.interpolate(
             input=conv_out.features, size=(h, w), mode='bilinear', align_corners=True)
@@ -201,19 +169,19 @@ def main():
         conv2_2_out_reduce = pca.fit_transform(conv2_2_out)  # F_i
         conv2_2_out_reduce /= conv2_2_out_reduce.max()
 
-        inputhsi = pca3.fit_transform(inputhsi.reshape(-1, 129))
+        input_hsi = pca3.fit_transform(input_hsi.reshape(-1, 129))
 
         x, y = np.unravel_index(np.arange(h * w), (h, w)) / np.sqrt(h * h + w * w)
         x, y = x[:, np.newaxis], y[:, np.newaxis]
 
-        img = inputimage.cpu().numpy().transpose(0, 2, 3, 1).reshape(-1, 3)
+        img = input_image.cpu().numpy().transpose(0, 2, 3, 1).reshape(-1, 3)
 
-        feature_map = np.concatenate((img, conv2_2_out_reduce, x, y, inputhsi), axis=1)  # X_i
+        feature_map = np.concatenate((img, conv2_2_out_reduce, x, y, input_hsi), axis=1)  # X_i
 
         # feature_binary_code = itq_train(feature_map, 13, 32, 'cuda').reshape(h, w, -1)
-        feature_binary_code = feature_map.reshape(h, w, -1)
+        feature_binary_code = feature_map.reshape((h, w, -1))
 
-        label_map = inputlabel.numpy()
+        label_map = input_label.numpy()
         alpha = []
         classes = []
 
@@ -228,7 +196,7 @@ def main():
 
         results = result_generation(alpha, classes, k, save=True)
         for i, result in enumerate(results):
-            confusion_matrix[i] += get_confusion_matrix(gt[0], result, num_class=10, ignore=-1)
+            confusion_matrix[i] += get_confusion_matrix(ground_truth[0], result, num_class=10, ignore=-1)
 
     for i, thre in enumerate([0, 0.3, 0.7]):
         pos = confusion_matrix[i].sum(1)
