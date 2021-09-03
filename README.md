@@ -1,5 +1,4 @@
-# A pytorch implementation for paper "Iterative Quantization: A Procrustean Approach to Learning Binary Codes for Large-scale Image Retrieval" TPAMI-2013
-
+# Coarse-to-fine-annotation
 ## REQUIREMENTS
 `pip install -r requirements.txt`
 
@@ -47,5 +46,3 @@ imagenet-tc100-alexnet dataset. Alexnet features, top 100 classes, 5000 query im
   cifar10-alexnet@ALL | 0.2000 | 0.2175 | 0.2215 | 0.2308 | 0.2386 | 0.2490 | 0.2551 | 0.2623
   nus-wide-tc21-alexnet@5000 | 0.6423 | 0.6878 | 0.7016 | 0.7186 | 0.7280 | 0.7389 | 0.7500 | 0.7539
   imagenet-tc100-alexnet@1000 | 0.1617 | 0.2369 | 0.2732 | 0.3296 | 0.3751 | 0.4076 | 0.4418 | 0.4554
-
-# Coarse-to-fine-annotation
