@@ -24,7 +24,10 @@ class dataset(Dataset):
         hsi = self.read_HSD(os.path.join(self.root, self.hsiList[item]))
         image = cv2.imread(os.path.join(self.root, self.imageList[item]), cv2.IMREAD_COLOR)
         label = cv2.imread(os.path.join(self.root, self.labelList[item]), cv2.IMREAD_GRAYSCALE)
-        gt = cv2.imread(os.path.join(self.root, self.labelList[item]), cv2.IMREAD_GRAYSCALE).transpose(1, 0)[:, ::-1]
+        gt = cv2.imread(os.path.join(self.root, self.labelList[item]), cv2.IMREAD_GRAYSCALE)
+
+        print(image.shape, hsi.shape, gt.shape, label.shape)
+        assert image.shape == hsi.shape == gt.shape == label.shape
 
         # image = image.transpose(1, 0, 2)[:, ::-1, :]  # hsicity dataset
 
